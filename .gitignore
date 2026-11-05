@@ -1,0 +1,82 @@
+# ============================================================
+# AttendIQ — .gitignore
+# ============================================================
+
+# --- Environment & secrets ---
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+web/.env
+mobile/.env
+
+# NEVER commit demo credentials or real credentials
+DEMO_CREDENTIALS.md
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/.venv/
+backend/env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+
+# --- Node / React ---
+web/node_modules/
+web/dist/
+web/.cache/
+*.tsbuildinfo
+
+# --- Flutter / Dart ---
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/*.iml
+mobile/pubspec.lock
+
+# --- IDE ---
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+npm-debug.log*
+yarn-error.log*
+
+# --- Face models / binary assets (too large for git) ---
+backend/app/models/*.bin
+backend/app/models/*.caffemodel
+backend/app/models/*.prototxt
+*.pkl
+*.npy
+
+# --- Supabase ---
+.supabase/
+supabase/.temp/
+
+# --- Misc ---
+*.bak
+*.tmp
+.cache/
