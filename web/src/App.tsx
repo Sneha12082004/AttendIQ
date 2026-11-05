@@ -13,12 +13,14 @@ import { ClassroomsPage } from './pages/admin/ClassroomsPage'
 import { DefaultersPage } from './pages/admin/DefaultersPage'
 import { AnalyticsPage } from './pages/admin/AnalyticsPage'
 import { AuditLogsPage } from './pages/admin/AuditLogsPage'
+import { StudentAppPage } from './pages/student/StudentAppPage'
 
 export const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/student" element={<StudentAppPage />} />
 
       {/* Faculty Routes */}
       <Route path="/faculty" element={<FacultyLayout />}>

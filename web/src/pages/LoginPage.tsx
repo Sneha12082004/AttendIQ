@@ -17,6 +17,8 @@ export const LoginPage: React.FC = () => {
       const user = await login({ email, password })
       if (user.role === 'admin') {
         navigate('/admin/dashboard')
+      } else if (user.role === 'student') {
+        navigate('/student')
       } else {
         navigate('/faculty/dashboard')
       }
@@ -163,6 +165,18 @@ export const LoginPage: React.FC = () => {
               >
                 <div className="font-semibold text-teal-400">System Admin</div>
                 <div className="text-[10px] text-slate-400">Admin Console</div>
+              </button>
+            </div>
+
+            {/* Launch Student Mobile App Directly */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => navigate('/student')}
+                className="w-full py-2.5 px-3 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 border border-teal-500/40 rounded-lg text-xs font-semibold text-teal-300 flex items-center justify-center gap-2 transition-all shadow-sm"
+              >
+                <span>📱 Launch Student Mobile App (Interactive Simulation)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
