@@ -37,9 +37,12 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('attendiq_token')
-      localStorage.removeItem('attendiq_user')
-      window.location.href = '/login'
+      // Do not redirect to login if user is in student simulation or auth check
+      if (!window.location.pathname.startsWith('/student') && !error.config?.url?.includes('/auth/')) {
+        localStorage.removeItem('attendiq_token')
+        localStorage.removeItem('attendiq_user')
+        window.location.href = '/login'
+      }
     }
 
     if (import.meta.env.DEV) {
