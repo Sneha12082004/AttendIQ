@@ -5,7 +5,7 @@ Authentication endpoints: Login, Current User, Token Refresh, and Demo Accounts.
 """
 
 from datetime import timedelta
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 

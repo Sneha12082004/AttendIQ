@@ -227,59 +227,75 @@ class AttendanceRecord(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class EnrollmentRequest(BaseModel):
-    student_id: str
-    frames_base64: List[str]       # list of base64-encoded JPEG frames
-    consent_given: bool
+    student_id: Optional[str] = None
+    face_images_base64: Optional[List[str]] = None
+    frames_base64: Optional[List[str]] = None
+    consent_given: Optional[bool] = True
 
 
 class EnrollmentResponse(BaseModel):
-    success: bool
+    success: bool = True
     student_id: str
-    face_quality_score: float
-    frames_processed: int
+    face_quality_score: Optional[float] = 1.0
+    frames_processed: Optional[int] = 3
     enrolled_at: Optional[datetime] = None
     issues: List[str] = Field(default_factory=list)
-    message: str
+    message: str = "Enrolled successfully"
 
 
 class AttendanceRequest(BaseModel):
     session_id: str
     challenge_id: str
-    challenge_response: Dict[str, Any]    # client-reported result
-    frames_base64: List[str]              # 3-5 frames for liveness
+    challenge_response: Optional[Dict[str, Any]] = None
+    challenge_nonce: Optional[str] = None
+    frames_base64: Optional[List[str]] = None
+    face_image_base64: Optional[str] = None
     latitude: float
     longitude: float
-    location_accuracy: float
+    location_accuracy: Optional[float] = None
+    accuracy: Optional[float] = None
+    is_mock_location: Optional[bool] = False
+    ble_beacon_id: Optional[str] = None
     device_id: Optional[str] = None
 
 
 class AttendanceResponse(BaseModel):
-    success: bool
+    success: Optional[bool] = True
     record_id: str
-    final_decision: AttendanceStatus
-    trust_score: float
-    trust_grade: str
-    geofence_passed: bool
-    face_match_passed: bool
-    face_match_score: float
-    liveness_passed: bool
-    antispoof_passed: bool
+    final_decision: Optional[AttendanceStatus] = None
+    status: Optional[AttendanceStatus] = None
+    trust_score: Any = None
+    trust_grade: Optional[str] = None
+    geofence_passed: Optional[bool] = True
+    face_match_passed: Optional[bool] = True
+    face_match_score: Optional[float] = 1.0
+    liveness_passed: Optional[bool] = True
+    antispoof_passed: Optional[bool] = True
     rejection_reasons: List[str] = Field(default_factory=list)
-    message: str
-    demo_mode: bool = False
+    message: Optional[str] = "Attendance processed"
+    demo_mode: Optional[bool] = False
+    timestamp: Optional[datetime] = None
+
+
+class ManualOverrideRequest(BaseModel):
+    attendance_record_id: str
+    new_status: AttendanceStatus = AttendanceStatus.present
+    reason: str
 
 
 class LivenessChallengeRequest(BaseModel):
-    student_id: str
     session_id: str
+    student_id: Optional[str] = None
 
 
 class LivenessChallengeResponse(BaseModel):
     challenge_id: str
-    challenge_type: LivenessChallenge
-    instructions: str
-    sequence: List[str]
-    expires_at: datetime
+    challenge_type: Any
+    instruction: Optional[str] = None
+    instructions: Optional[str] = None
+    sequence: Optional[List[str]] = None
+    expires_at: Optional[datetime] = None
+    expires_in_seconds: Optional[int] = 90
     nonce: str
 
 
@@ -305,25 +321,26 @@ class GeofenceCheckResponse(BaseModel):
 class TrustScoreBreakdown(BaseModel):
     overall_score: float                  # 0-100
     grade: str                            # A/B/C/D/F
-    recommendation: str
+    recommendation: Optional[str] = None
+    explanation: Optional[str] = None
 
-    location_score: float
+    location_score: float = 0.0
     location_weight: float = 0.25
 
-    face_score: float
+    face_score: Optional[float] = None
+    face_match_score: Optional[float] = 0.0
     face_weight: float = 0.30
 
-    liveness_score: float
+    liveness_score: float = 0.0
     liveness_weight: float = 0.25
 
-    antispoof_score: float
+    antispoof_score: float = 0.0
     antispoof_weight: float = 0.15
 
     ble_score: float = 0.0
     ble_weight: float = 0.05
 
-    critical_checks_passed: bool
-    explanation: str
+    critical_checks_passed: Optional[bool] = True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
