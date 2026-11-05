@@ -14,8 +14,13 @@ import type {
 } from '../types'
 
 export const adminApi = {
+  getAnalytics: async (): Promise<any> => {
+    const response = await apiClient.get<any>('/admin/analytics')
+    return response.data
+  },
+
   getDashboardStats: async (): Promise<AdminDashboardStats> => {
-    const response = await apiClient.get<AdminDashboardStats>('/admin/dashboard')
+    const response = await apiClient.get<AdminDashboardStats>('/admin/analytics')
     return response.data
   },
 
@@ -76,10 +81,15 @@ export const adminApi = {
     building?: string
     page?: number
     per_page?: number
-  }): Promise<PaginatedResponse<Classroom>> => {
-    const response = await apiClient.get<PaginatedResponse<Classroom>>('/admin/classrooms', {
+  }): Promise<any> => {
+    const response = await apiClient.get<any>('/admin/classrooms', {
       params,
     })
+    return response.data
+  },
+
+  configureClassroom: async (data: any): Promise<any> => {
+    const response = await apiClient.post<any>('/admin/classrooms', data)
     return response.data
   },
 
@@ -120,11 +130,18 @@ export const adminApi = {
   },
 
   // Defaulters
-  getDefaulters: async (params?: {
+  getDefaulters: async (params?: number | {
     threshold?: number
     department_id?: string
-  }): Promise<Defaulter[]> => {
-    const response = await apiClient.get<Defaulter[]>('/admin/defaulters', { params })
+  }): Promise<any> => {
+    const queryParams: Record<string, any> = {}
+    if (typeof params === 'number') {
+      queryParams.threshold_percent = params
+    } else if (params && typeof params === 'object') {
+      if (params.threshold !== undefined) queryParams.threshold_percent = params.threshold
+      if (params.department_id) queryParams.department_id = params.department_id
+    }
+    const response = await apiClient.get<any>('/admin/defaulters', { params: queryParams })
     return response.data
   },
 
@@ -134,14 +151,19 @@ export const adminApi = {
     per_page?: number
     user_id?: string
     action?: string
-  }): Promise<PaginatedResponse<AuditLog>> => {
-    const response = await apiClient.get<PaginatedResponse<AuditLog>>('/admin/audit-logs', {
+  }): Promise<any> => {
+    const response = await apiClient.get<any>('/admin/audit-logs', {
       params,
     })
     return response.data
   },
 
   // System-wide suspicious
+  getSuspicious: async (): Promise<any> => {
+    const response = await apiClient.get<any>('/admin/suspicious')
+    return response.data
+  },
+
   getSuspiciousAttempts: async (params?: {
     reviewed?: boolean
     page?: number

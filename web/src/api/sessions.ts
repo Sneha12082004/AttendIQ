@@ -22,13 +22,30 @@ export const sessionsApi = {
     return response.data
   },
 
-  createSession: async (payload: CreateSessionPayload): Promise<ClassSession> => {
-    const response = await apiClient.post<ClassSession>('/sessions', payload)
-    return response.data
+  createSession: async (payload: CreateSessionPayload): Promise<any> => {
+    // Try /sessions/create first (FastAPI endpoint), fallback to /sessions
+    try {
+      const response = await apiClient.post<any>('/sessions/create', payload)
+      return response.data
+    } catch {
+      const response = await apiClient.post<any>('/sessions', payload)
+      return response.data
+    }
   },
 
-  closeSession: async (id: string): Promise<ClassSession> => {
-    const response = await apiClient.patch<ClassSession>(`/sessions/${id}/close`)
+  closeSession: async (id: string): Promise<any> => {
+    // Backend router defines PUT /sessions/{id}/close
+    try {
+      const response = await apiClient.put<any>(`/sessions/${id}/close`)
+      return response.data
+    } catch {
+      const response = await apiClient.patch<any>(`/sessions/${id}/close`)
+      return response.data
+    }
+  },
+
+  getSessionAttendance: async (sessionId: string): Promise<any[]> => {
+    const response = await apiClient.get<any[]>(`/attendance/session/${sessionId}`)
     return response.data
   },
 

@@ -100,7 +100,8 @@ def check_geofence(
     )
 
     if not accuracy_ok:
-        detail_message += f" [Warning: Poor GPS accuracy: {reported_accuracy_meters:.1f}m]"
+        acc_str = f"{reported_accuracy_meters:.1f}m" if reported_accuracy_meters is not None else "Unknown"
+        detail_message += f" [Warning: Poor GPS accuracy: {acc_str}]"
 
     return {
         "is_within": is_within,

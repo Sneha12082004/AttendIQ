@@ -261,7 +261,7 @@ export interface PaginatedResponse<T> {
 export interface LoginCredentials {
   email: string
   password: string
-  role: 'faculty' | 'admin'
+  role?: 'faculty' | 'admin'
 }
 
 export interface AuthResponse {
@@ -274,7 +274,7 @@ export interface CreateSessionPayload {
   subject_id: string
   classroom_id: string
   section: string
-  department_id: string
+  department_id?: string
   duration_minutes?: number
 }
 

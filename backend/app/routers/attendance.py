@@ -235,8 +235,8 @@ async def mark_attendance(
         "subject_id": session["subject_id"],
         "classroom_id": session["classroom_id"],
         "timestamp": now_iso,
-        "student_name": student["full_name"],
-        "student_reg_no": student["reg_number"],
+        "student_name": student.get("full_name") or current_user.get("full_name", "Student"),
+        "student_reg_no": student.get("reg_number") or student.get("registration_number", "REG000"),
         # Geolocation
         "latitude": payload.latitude,
         "longitude": payload.longitude,

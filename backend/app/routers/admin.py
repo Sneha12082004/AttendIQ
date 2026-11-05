@@ -11,6 +11,7 @@ Administrative portal endpoints:
 """
 
 import math
+from datetime import datetime
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -125,6 +126,9 @@ async def get_defaulter_early_warning(
     st_res = db.table("students").select("*").execute()
     students = st_res.data or []
 
+    users_res = db.table("users").select("*").execute()
+    users_map = {u["id"]: u for u in (users_res.data or [])}
+
     att_res = db.table("attendance").select("*").execute()
     records = att_res.data or []
 
@@ -136,12 +140,15 @@ async def get_defaulter_early_warning(
 
     for s in students:
         s_att = [r for r in records if r.get("student_id") == s["id"]]
+        student_name = s.get("full_name") or users_map.get(s.get("user_id"), {}).get("full_name", f"Student {s.get('id')}")
+        reg_no = s.get("reg_number") or s.get("registration_number") or "CS2024001"
+
         # In demo data, simulate realistic distribution if few historical records
         total_classes = max(len(s_att), 30)
         present = sum(1 for r in s_att if r.get("status") in ["present", "manual_override"])
         if len(s_att) < 5:
             # Seeded defaulter check
-            if s.get("reg_number") in ["CS2024005", "CS2024008", "IT2024004"]:
+            if reg_no in ["CS2024005", "CS2024008", "IT2024004", "TIE20210005", "TIE20210008"]:
                 present = 16
                 total_classes = 30
             else:
@@ -159,8 +166,8 @@ async def get_defaulter_early_warning(
 
             defaulters.append({
                 "student_id": s["id"],
-                "name": s["full_name"],
-                "reg_number": s["reg_number"],
+                "name": student_name,
+                "reg_number": reg_no,
                 "department_id": s.get("department_id"),
                 "semester": s.get("semester", 3),
                 "section": s.get("section", "A"),

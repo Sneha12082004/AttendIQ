@@ -2,6 +2,23 @@ import apiClient from './client'
 import type { Subject, Classroom, ClassSession, PaginatedResponse } from '../types'
 
 export const facultyApi = {
+  getDashboard: async (): Promise<any> => {
+    const response = await apiClient.get<any>('/faculty/dashboard')
+    return response.data
+  },
+
+  getSessions: async (): Promise<any[]> => {
+    const response = await apiClient.get<any[]>('/faculty/sessions')
+    return response.data
+  },
+
+  getReports: async (subject_id?: string): Promise<any> => {
+    const response = await apiClient.get<any>('/faculty/reports', {
+      params: subject_id ? { subject_id } : undefined,
+    })
+    return response.data
+  },
+
   getSubjects: async (): Promise<Subject[]> => {
     const response = await apiClient.get<Subject[]>('/faculty/subjects')
     return response.data

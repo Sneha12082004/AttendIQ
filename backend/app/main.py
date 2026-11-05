@@ -56,12 +56,13 @@ app.add_middleware(
 )
 
 # ─── Register Routers ────────────────────────────────────────────────────────
-app.include_router(auth_router, prefix="/api")
-app.include_router(enrollment_router, prefix="/api")
-app.include_router(sessions_router, prefix="/api")
-app.include_router(attendance_router, prefix="/api")
-app.include_router(faculty_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
+for prefix in ["/api", "/api/v1"]:
+    app.include_router(auth_router, prefix=prefix)
+    app.include_router(enrollment_router, prefix=prefix)
+    app.include_router(sessions_router, prefix=prefix)
+    app.include_router(attendance_router, prefix=prefix)
+    app.include_router(faculty_router, prefix=prefix)
+    app.include_router(admin_router, prefix=prefix)
 
 
 # ─── Health & Root Endpoints ─────────────────────────────────────────────────

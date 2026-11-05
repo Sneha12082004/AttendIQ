@@ -66,6 +66,14 @@ export const attendanceApi = {
     await apiClient.patch(`/attendance/suspicious/${id}/review`, { action, note })
   },
 
+  manualOverride: async (payload: {
+    attendance_record_id: string
+    new_status: string
+    reason: string
+  }): Promise<void> => {
+    await apiClient.post('/attendance/override', payload)
+  },
+
   exportCSV: async (params?: Record<string, string>): Promise<Blob> => {
     const response = await apiClient.get('/reports/export', {
       params,

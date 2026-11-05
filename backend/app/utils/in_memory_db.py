@@ -268,15 +268,22 @@ class InMemoryDB:
         ]
 
         # ── Users (hashed passwords for Demo@123) ────────────────────────────
-        demo_password_hash = pwd_context.hash("Demo@123")
+        try:
+            demo_password_hash = pwd_context.hash("Demo@123")
+        except Exception:
+            import hashlib
+            demo_password_hash = "demo$" + hashlib.sha256(b"Demo@123").hexdigest()
 
         users = [
             # Admin
             {"id": "user-admin-01", "email": "admin@attendiq.demo",    "full_name": "Admin User",          "role": "admin",   "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             # Faculty
-            {"id": "user-fac-01",   "email": "faculty1@attendiq.demo", "full_name": "Dr. Priya Sharma",    "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
-            {"id": "user-fac-02",   "email": "faculty2@attendiq.demo", "full_name": "Prof. Rahul Verma",   "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
-            {"id": "user-fac-03",   "email": "faculty3@attendiq.demo", "full_name": "Dr. Meera Nair",      "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-01",   "email": "dr.mehta@attendiq.demo", "full_name": "Dr. Priya Mehta",    "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-01-alt", "email": "faculty1@attendiq.demo", "full_name": "Dr. Priya Mehta", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-02",   "email": "prof.kumar@attendiq.demo", "full_name": "Prof. Rajan Kumar", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-02-alt", "email": "faculty2@attendiq.demo", "full_name": "Prof. Rajan Kumar", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-03",   "email": "dr.sharma@attendiq.demo", "full_name": "Dr. Anjali Sharma",  "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-fac-03-alt", "email": "faculty3@attendiq.demo", "full_name": "Dr. Anjali Sharma", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             # Students
             {"id": "user-stu-01",   "email": "student1@attendiq.demo", "full_name": "Arjun Patel",         "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-stu-02",   "email": "student2@attendiq.demo", "full_name": "Sneha Krishnan",      "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
@@ -302,9 +309,12 @@ class InMemoryDB:
 
         # ── Faculty profiles ─────────────────────────────────────────────────
         faculty = [
-            {"id": "fac-001", "user_id": "user-fac-01", "employee_id": "EMP001", "department_id": "dept-cs",   "designation": "Associate Professor", "subjects": ["subj-cs-01", "subj-cs-05"]},
-            {"id": "fac-002", "user_id": "user-fac-02", "employee_id": "EMP002", "department_id": "dept-it",   "designation": "Professor",           "subjects": ["subj-it-01", "subj-it-02"]},
-            {"id": "fac-003", "user_id": "user-fac-03", "employee_id": "EMP003", "department_id": "dept-ece",  "designation": "Assistant Professor",  "subjects": ["subj-ece-01", "subj-ece-02"]},
+            {"id": "fac-001", "user_id": "user-fac-01", "name": "Dr. Priya Mehta", "employee_id": "EMP001", "department_id": "dept-cs",   "designation": "Associate Professor", "subjects": ["subj-cs-01", "subj-cs-05"]},
+            {"id": "fac-001b", "user_id": "user-fac-01-alt", "name": "Dr. Priya Mehta", "employee_id": "EMP001", "department_id": "dept-cs",   "designation": "Associate Professor", "subjects": ["subj-cs-01", "subj-cs-05"]},
+            {"id": "fac-002", "user_id": "user-fac-02", "name": "Prof. Rajan Kumar", "employee_id": "EMP002", "department_id": "dept-it",   "designation": "Professor",           "subjects": ["subj-it-01", "subj-it-02"]},
+            {"id": "fac-002b", "user_id": "user-fac-02-alt", "name": "Prof. Rajan Kumar", "employee_id": "EMP002", "department_id": "dept-it",   "designation": "Professor",           "subjects": ["subj-it-01", "subj-it-02"]},
+            {"id": "fac-003", "user_id": "user-fac-03", "name": "Dr. Anjali Sharma", "employee_id": "EMP003", "department_id": "dept-ece",  "designation": "Assistant Professor",  "subjects": ["subj-ece-01", "subj-ece-02"]},
+            {"id": "fac-003b", "user_id": "user-fac-03-alt", "name": "Dr. Anjali Sharma", "employee_id": "EMP003", "department_id": "dept-ece",  "designation": "Assistant Professor",  "subjects": ["subj-ece-01", "subj-ece-02"]},
         ]
 
         # ── Student profiles ─────────────────────────────────────────────────
