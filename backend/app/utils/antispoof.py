@@ -78,11 +78,12 @@ def check_specular_screen_glare(bgr_image: np.ndarray) -> float:
     total_pixels = gray.size
     ratio = overexposed_pixels / max(1, total_pixels)
 
-    if ratio > 0.08:
-        # Large specular glare from screen glass
-        return 0.35
-    elif ratio > 0.03:
-        return 0.65
+    if ratio > 0.035:
+        # Clear specular glare from glass screen or glossy photo paper
+        return 0.30
+    elif ratio > 0.015:
+        # Moderate hotspot reflection
+        return 0.45
     return 0.92
 
 

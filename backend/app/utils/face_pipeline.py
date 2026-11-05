@@ -106,21 +106,22 @@ def detect_faces(bgr_image: np.ndarray) -> List[Dict[str, Any]]:
 
     if OPENCV_AVAILABLE:
         gray = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
-        try:
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            detected = face_cascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=4,
-                minSize=(int(w * 0.15), int(h * 0.15))
-            )
-            for (x, y, fw, fh) in detected:
-                faces.append({
-                    "x": int(x), "y": int(y), "w": int(fw), "h": int(fh),
-                    "confidence": 0.95
-                })
-        except Exception as e:
-            print(f"[FacePipeline] Cascade detection failed: {e}")
+        if hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades'):
+            try:
+                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                detected = face_cascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=4,
+                    minSize=(int(w * 0.15), int(h * 0.15))
+                )
+                for (x, y, fw, fh) in detected:
+                    faces.append({
+                        "x": int(x), "y": int(y), "w": int(fw), "h": int(fh),
+                        "confidence": 0.95
+                    })
+            except Exception as e:
+                pass
 
     # Fallback heuristic if cascade returns empty but frame is valid (e.g. headless without Haar XML)
     if not faces:
@@ -163,28 +164,43 @@ def extract_face_embedding(bgr_image: np.ndarray, bbox: Optional[Dict[str, Any]]
         arr = np.array(pil_crop)
         gray = np.mean(arr, axis=2).astype(np.uint8)
 
-    # Compute multi-grid directional intensity moments
-    grid_features: List[float] = []
-    # 4x4 sub-regions = 16 blocks; 8 features each = 128 dimensions
+    # 1. Zero-mean spatial projection (8x8 = 64 features)
+    # Downsample and subtract global mean to eliminate ambient brightness bias
+    if OPENCV_AVAILABLE:
+        down = cv2.resize(gray, (8, 8)).astype(np.float32)
+    else:
+        pil_down = Image.fromarray(gray).resize((8, 8))
+        down = np.array(pil_down, dtype=np.float32)
+    down_zm = down - np.mean(down)
+    spatial_features = down_zm.flatten()
+    s_norm = np.linalg.norm(spatial_features)
+    if s_norm > 1e-5:
+        spatial_features = spatial_features / s_norm
+    else:
+        spatial_features = np.zeros(64, dtype=np.float32)
+
+    # 2. Local gradient & relative contrast across 16 sub-blocks (16 x 4 = 64 features)
+    block_features: List[float] = []
     bh, bw = 24, 24
     for r in range(4):
         for c in range(4):
             block = gray[r*bh:(r+1)*bh, c*bw:(c+1)*bw].astype(np.float32)
-            mean_val = float(np.mean(block))
-            std_val = float(np.std(block))
-            # Horizontal gradient
-            gx = float(np.mean(np.abs(np.diff(block, axis=1)))) if block.shape[1] > 1 else 0.0
-            # Vertical gradient
-            gy = float(np.mean(np.abs(np.diff(block, axis=0)))) if block.shape[0] > 1 else 0.0
-            # 4 quadrant averages within block
-            q1 = float(np.mean(block[:12, :12]))
-            q2 = float(np.mean(block[:12, 12:]))
-            q3 = float(np.mean(block[12:, :12]))
-            q4 = float(np.mean(block[12:, 12:]))
-            grid_features.extend([mean_val, std_val, gx, gy, q1, q2, q3, q4])
+            b_mean = float(np.mean(block))
+            blk_zm = block - b_mean
+            gx = float(np.mean(np.abs(np.diff(blk_zm, axis=1)))) if blk_zm.shape[1] > 1 else 0.0
+            gy = float(np.mean(np.abs(np.diff(blk_zm, axis=0)))) if blk_zm.shape[0] > 1 else 0.0
+            q1 = float(np.mean(blk_zm[:12, :12]))
+            q2 = float(np.mean(blk_zm[12:, 12:]))
+            block_features.extend([gx, gy, q1, q2])
 
-    vector = np.array(grid_features[:128], dtype=np.float32)
-    # L2 Normalization
+    bf = np.array(block_features[:64], dtype=np.float32)
+    bf_norm = np.linalg.norm(bf)
+    if bf_norm > 1e-5:
+        bf = bf / bf_norm
+    else:
+        bf = np.zeros(64, dtype=np.float32)
+
+    vector = np.concatenate([spatial_features, bf])
     norm = np.linalg.norm(vector)
     if norm > 1e-6:
         vector = vector / norm
