@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import clsx from 'clsx'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -15,7 +15,8 @@ export const Input: React.FC<InputProps> = ({
   className,
   ...props
 }) => {
-  const inputId = id || props.name || Math.random().toString(36).substring(7)
+  const generatedId = useId()
+  const inputId = id || props.name || generatedId
 
   return (
     <div className="w-full">
@@ -27,7 +28,7 @@ export const Input: React.FC<InputProps> = ({
       <input
         id={inputId}
         className={clsx(
-          'w-full px-3.5 py-2 text-sm rounded-lg border bg-white text-slate-900 placeholder:text-slate-400 transition-colors',
+          'w-full px-3.5 py-2 text-sm rounded-lg border transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-offset-1',
           error
             ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
