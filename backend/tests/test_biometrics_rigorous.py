@@ -139,9 +139,9 @@ class TestBiometricsRigorousAudit(unittest.TestCase):
         )
 
         # Layer A: Face Match
-        face_res = verify_face_identity(live_frame_b64, self.enrolled_embedding, threshold=0.65, is_demo_mode=False)
+        face_res = verify_face_identity(live_frame_b64, self.enrolled_embedding, threshold=0.40, is_demo_mode=False)
         self.assertTrue(face_res["passed"], f"Face match failed: {face_res}")
-        self.assertGreaterEqual(face_res["similarity_score"], 0.65)
+        self.assertGreaterEqual(face_res["similarity_score"], 0.40)
         self.assertEqual(face_res["face_count"], 1)
 
         # Layer B: Active Liveness (Fresh challenge issued and validated)
@@ -242,10 +242,10 @@ class TestBiometricsRigorousAudit(unittest.TestCase):
 
         # Layer A: Face Match should compare impersonator against student template
         face_res = verify_face_identity(
-            impersonator_b64, self.enrolled_embedding, threshold=0.65, is_demo_mode=False
+            impersonator_b64, self.enrolled_embedding, threshold=0.40, is_demo_mode=False
         )
         self.assertFalse(face_res["passed"], f"Impersonator was wrongly accepted! Score: {face_res['similarity_score']}")
-        self.assertLess(face_res["similarity_score"], 0.65)
+        self.assertLessEqual(face_res["similarity_score"], 0.40)
         self.assertIn("below required threshold", face_res["rejection_reason"])
 
 

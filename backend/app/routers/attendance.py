@@ -27,13 +27,127 @@ from app.models import (
     ManualOverrideRequest,
 )
 from app.utils.antispoof import evaluate_anti_spoofing
-from app.utils.face_pipeline import verify_face_identity
+from app.utils.face_pipeline import (
+    decode_image,
+    compute_face_quality,
+    detect_faces,
+    extract_face_embedding,
+    verify_face_identity,
+)
+from app.utils.enrollment_manager import enrollment_manager
 from app.utils.geofence import check_geofence, calculate_trust_contribution_location
 from app.utils.liveness import challenge_manager
 from app.utils.suspicious import suspicious_detector
 from app.utils.trust_score import compute_trust_score
 
 router = APIRouter(prefix="/attendance", tags=["Attendance Engine"])
+
+
+class RecognizeFrameRequest(BaseModel):
+    frame_b64: str
+    expected_student_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+@router.post("/recognize-frame")
+async def recognize_live_frame(payload: RecognizeFrameRequest):
+    """
+    Real-Time MacBook Webcam Face Recognition & Dynamic Bounding Box Engine.
+
+    Output classification:
+      - GREEN: Recognized enrolled student (Sneha Banerjee or Aastha Singh) with high similarity.
+      - AMBER: 'UNKNOWN PERSON' for any unrecognized individual or un-enrolled volunteer.
+      - RED: Rejected spoof attempt (screen glare) or multiple faces detected.
+    """
+    img = decode_image(payload.frame_b64)
+    if img is None:
+        return {
+            "detected": False,
+            "face_count": 0,
+            "faces": [],
+            "status": "INVALID_IMAGE",
+            "message": "Unable to decode camera frame",
+        }
+
+    quality = compute_face_quality(img)
+    antispoof = evaluate_anti_spoofing(payload.frame_b64, is_demo_mode=settings.demo_mode)
+    detected_faces = detect_faces(img)
+    face_count = len(detected_faces)
+
+    if face_count == 0:
+        return {
+            "detected": False,
+            "face_count": 0,
+            "faces": [],
+            "quality": quality,
+            "antispoof": antispoof,
+            "status": "NO_FACE_DETECTED",
+            "message": "Position your face clearly inside the camera frame",
+        }
+
+    if face_count > 1:
+        # Multiple faces detected in violation of single-person policy
+        face_list = []
+        for bbox in detected_faces:
+            face_list.append({
+                "bbox": bbox,
+                "recognized": False,
+                "student_id": None,
+                "name": "VIOLATION: MULTIPLE FACES",
+                "similarity": 0.0,
+                "color": "red",
+                "status": "MULTIPLE_FACES_DETECTED",
+            })
+        return {
+            "detected": True,
+            "face_count": face_count,
+            "faces": face_list,
+            "quality": quality,
+            "antispoof": antispoof,
+            "status": "MULTIPLE_FACES_DETECTED",
+            "message": f"Security Alert: {face_count} faces detected in frame. Exactly 1 person permitted.",
+        }
+
+    # Exactly 1 face detected
+    bbox = detected_faces[0]
+    embedding = extract_face_embedding(img, bbox)
+    match_result = enrollment_manager.match_face(
+        submitted_embedding=embedding,
+        expected_student_id=payload.expected_student_id,
+        threshold=settings.face_match_threshold,
+    )
+
+    color = match_result["color"]
+    status_label = match_result["status"]
+    display_name = match_result["name"]
+
+    # If passive anti-spoofing flags glare/replay attack
+    if not antispoof["passed"]:
+        color = "red"
+        status_label = "REJECTED_SPOOF"
+        display_name = f"SPOOF ALERT ({antispoof.get('rejection_reason', 'Presentation Attack')})"
+
+    return {
+        "detected": True,
+        "face_count": 1,
+        "faces": [
+            {
+                "bbox": bbox,
+                "recognized": match_result["recognized"] and antispoof["passed"],
+                "student_id": match_result.get("student_id"),
+                "name": display_name,
+                "reg_number": match_result.get("reg_number"),
+                "similarity": match_result["similarity"],
+                "color": color,
+                "status": status_label,
+                "candidates": match_result.get("candidates", []),
+            }
+        ],
+        "quality": quality,
+        "antispoof": antispoof,
+        "status": status_label,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
 
 
 @router.post("/challenge", response_model=LivenessChallengeResponse)
@@ -157,9 +271,14 @@ async def mark_attendance(
         ble_verified = payload.ble_beacon_id.strip() == classroom["ble_beacon_id"].strip()
 
     # ── Multi-Layer Check 2: Biometric Face Identity (Layer A) ───────────────
-    # Fetch enrolled embedding
+    # Fetch enrolled embedding from database or enrollment manager
     emb_res = db.table("face_embeddings").select("*").eq("student_id", student_id).execute()
-    enrolled_embedding = emb_res.data[0]["embedding_vector"] if emb_res.data else None
+    if emb_res.data and emb_res.data[0].get("embedding_vector"):
+        enrolled_embedding = emb_res.data[0]["embedding_vector"]
+    elif student_id in enrollment_manager.templates:
+        enrolled_embedding = enrollment_manager.templates[student_id].get("embedding")
+    else:
+        enrolled_embedding = None
 
     face_eval = verify_face_identity(
         submitted_frame_b64=payload.face_image_base64,

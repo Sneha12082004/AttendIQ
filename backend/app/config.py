@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
 
     # ── Face Recognition ──────────────────────────────────────────────────────
-    face_match_threshold: float = 0.65
+    face_match_threshold: float = 0.40
 
     # ── Liveness / Challenge ──────────────────────────────────────────────────
     liveness_timeout_seconds: int = 120

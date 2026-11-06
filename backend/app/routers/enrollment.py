@@ -200,3 +200,92 @@ async def reset_enrollment(current_user: dict = Depends(require_student)):
     }).execute()
 
     return {"status": "success", "message": "Biometric template cleared. You may now re-enroll."}
+
+
+@router.get("/roster")
+async def get_enrolled_roster():
+    """Returns the official enrolled identities: Sneha Banerjee and Aastha Singh."""
+    from app.utils.enrollment_manager import enrollment_manager
+    return {
+        "status": "success",
+        "enrolled_students": enrollment_manager.get_enrolled_summary(),
+        "policy": "Only Sneha Banerjee and Aastha Singh are enrolled. All others are UNKNOWN PERSON.",
+    }
+
+
+@router.post("/sync-photos")
+async def sync_photos_from_disk():
+    """Scans backend/enrollment_photos/ directories and updates biometric templates."""
+    from app.utils.enrollment_manager import enrollment_manager
+    updated = enrollment_manager.scan_and_sync_photos()
+    return {
+        "status": "success",
+        "photos_synced": updated,
+        "roster": enrollment_manager.get_enrolled_summary(),
+    }
+
+
+class UploadPhotoPayload(BaseModel):
+    student_id: str  # "stu-001" or "stu-002"
+    photo_base64: str
+    file_name: Optional[str] = None
+
+
+@router.post("/upload-photo")
+async def upload_enrollment_photo(payload: UploadPhotoPayload):
+    """Saves an enrollment photograph directly for Sneha Banerjee or Aastha Singh."""
+    import base64
+    from pathlib import Path
+    from app.utils.enrollment_manager import enrollment_manager, ENROLLED_IDENTITIES, ENROLLMENT_DIR
+
+    if payload.student_id not in ENROLLED_IDENTITIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid student ID '{payload.student_id}'. Only stu-001 (Sneha Banerjee) and stu-002 (Aastha Singh) are permitted."
+        )
+
+    meta = ENROLLED_IDENTITIES[payload.student_id]
+    target_dir = ENROLLMENT_DIR / meta["folder_name"]
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    b64_str = payload.photo_base64
+    if "base64," in b64_str:
+        b64_str = b64_str.split("base64,")[1]
+
+    try:
+        raw_bytes = base64.b64decode(b64_str)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid base64 encoding: {e}")
+
+    fname = payload.file_name or f"photo_{int(datetime.utcnow().timestamp())}.jpg"
+    target_path = target_dir / fname
+    with open(target_path, "wb") as f:
+        f.write(raw_bytes)
+
+    # Immediately sync
+    enrollment_manager.scan_and_sync_photos()
+
+    return {
+        "status": "success",
+        "message": f"Photograph saved for {meta['name']} at {fname}",
+        "roster": enrollment_manager.get_enrolled_summary(),
+    }
+
+
+class QuickEnrollPayload(BaseModel):
+    student_id: str
+    frame_b64: str
+
+
+@router.post("/quick-webcam-enroll")
+async def quick_webcam_enroll(payload: QuickEnrollPayload):
+    """Enrolls the student immediately using the active live camera frame."""
+    from app.utils.enrollment_manager import enrollment_manager
+    res = enrollment_manager.enroll_from_webcam(payload.student_id, payload.frame_b64)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Webcam enrollment failed"))
+    return {
+        "status": "success",
+        "message": f"Biometric template successfully enrolled from webcam for {res['name']}!",
+        "roster": enrollment_manager.get_enrolled_summary(),
+    }

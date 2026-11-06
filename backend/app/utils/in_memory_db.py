@@ -284,9 +284,9 @@ class InMemoryDB:
             {"id": "user-fac-02-alt", "email": "faculty2@attendiq.demo", "full_name": "Prof. Rajan Kumar", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-fac-03",   "email": "dr.sharma@attendiq.demo", "full_name": "Dr. Anjali Sharma",  "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-fac-03-alt", "email": "faculty3@attendiq.demo", "full_name": "Dr. Anjali Sharma", "role": "faculty", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
-            # Students
-            {"id": "user-stu-01",   "email": "student1@attendiq.demo", "full_name": "Arjun Patel",         "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
-            {"id": "user-stu-02",   "email": "student2@attendiq.demo", "full_name": "Sneha Krishnan",      "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            # Students (Only Sneha Banerjee and Aastha Singh are enrolled for hackathon biometric demo)
+            {"id": "user-stu-01",   "email": "student1@attendiq.demo", "full_name": "Sneha Banerjee",      "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
+            {"id": "user-stu-02",   "email": "student2@attendiq.demo", "full_name": "Aastha Singh",         "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-stu-03",   "email": "student3@attendiq.demo", "full_name": "Rohit Mehta",         "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-stu-04",   "email": "student4@attendiq.demo", "full_name": "Anjali Singh",        "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
             {"id": "user-stu-05",   "email": "student5@attendiq.demo", "full_name": "Vikas Gupta",         "role": "student", "password_hash": demo_password_hash, "is_active": True, "created_at": now.isoformat()},
@@ -323,19 +323,23 @@ class InMemoryDB:
             uid = f"user-stu-{i:02d}"
             dept = "dept-cs" if i <= 8 else ("dept-it" if i <= 14 else "dept-ece")
             section = "A" if i % 2 == 0 else "B"
+            full_name = "Sneha Banerjee" if i == 1 else ("Aastha Singh" if i == 2 else f"Student {i}")
+            reg_num = "CS2024001" if i == 1 else ("CS2024002" if i == 2 else f"TIE2021{i:04d}")
+            is_enrolled = (i in (1, 2))  # Exactly and only Sneha Banerjee and Aastha Singh are enrolled
             student_profiles.append({
                 "id": f"stu-{i:03d}",
                 "user_id": uid,
-                "registration_number": f"TIE2021{i:04d}",
+                "full_name": full_name,
+                "registration_number": reg_num,
                 "department_id": dept,
                 "section": section,
                 "semester": 5,
                 "batch_year": 2021,
-                "face_enrolled": i <= 15,          # first 15 students enrolled
-                "face_enrollment_date": (now - timedelta(days=30)).isoformat() if i <= 15 else None,
-                "biometric_consent": i <= 15,
-                "consent_date": (now - timedelta(days=31)).isoformat() if i <= 15 else None,
-                "face_embedding": [0.0] * 128 if i <= 15 else None,  # placeholder embedding
+                "face_enrolled": is_enrolled,
+                "face_enrollment_date": (now - timedelta(days=30)).isoformat() if is_enrolled else None,
+                "biometric_consent": is_enrolled,
+                "consent_date": (now - timedelta(days=31)).isoformat() if is_enrolled else None,
+                "face_embedding": [0.0] * 128 if is_enrolled else None,
             })
 
         # ── Sessions (some active, some past) ────────────────────────────────
@@ -481,6 +485,7 @@ class InMemoryDB:
         self._store["suspicious"]   = suspicious_records
         self._store["audit_logs"]   = audit_logs
         self._store["enrollments"]  = enrollments
+        self._store["face_embeddings"] = []
         self._store["challenges"]   = []   # liveness challenges (runtime only)
         self._store["biometric_consent"] = []
 
